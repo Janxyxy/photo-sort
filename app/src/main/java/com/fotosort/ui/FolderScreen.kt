@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -38,7 +37,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,44 +63,72 @@ import coil.compose.AsyncImage
 import com.fotosort.Folder
 import com.fotosort.MediaRepository
 import com.fotosort.Prefs
+import kotlinx.coroutines.launch
 
-private val imagePermission =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) Manifest.permission.READ_MEDIA_IMAGES
-    else Manifest.permission.READ_EXTERNAL_STORAGE
+/** The first entry decides whether the app can work; videos are optional. */
+private val mediaPermissions =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO)
+    } else {
+        arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FolderScreen(prefs: Prefs, onOpen: (Folder) -> Unit, onSettings: () -> Unit) {
     val context = LocalContext.current
-    var granted by remember {
-        mutableStateOf(context.checkSelfPermission(imagePermission) == PackageManager.PERMISSION_GRANTED)
-    }
+    fun hasAccess() = context.checkSelfPermission(mediaPermissions[0]) == PackageManager.PERMISSION_GRANTED
+
+    var granted by remember { mutableStateOf(hasAccess()) }
     var askedOnce by remember { mutableStateOf(false) }
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        granted = it
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        granted = hasAccess()
         askedOnce = true
     }
     LaunchedEffect(Unit) {
-        if (!granted) permissionLauncher.launch(imagePermission)
+        if (!granted) permissionLauncher.launch(mediaPermissions)
     }
     // picks up a permission granted from the system settings screen
     LifecycleResumeEffect(Unit) {
-        granted = context.checkSelfPermission(imagePermission) == PackageManager.PERMISSION_GRANTED
+        granted = hasAccess()
         onPauseOrDispose {}
     }
 
     var folders by remember { mutableStateOf<List<Folder>?>(null) }
     var reload by remember { mutableIntStateOf(0) }
     var pendingCount by remember { mutableIntStateOf(prefs.pendingIds.size) }
+    var showReview by remember { mutableStateOf(false) }
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     LaunchedEffect(granted, reload) {
-        if (granted) folders = MediaRepository.loadFolders(context)
+        if (granted) folders = MediaRepository.loadFolders(context, prefs.includeVideos)
     }
-    val trash = rememberTrashLauncher(prefs) {
+
+    fun handleTrashed(bytes: Long) {
         pendingCount = prefs.pendingIds.size
         reload++
+        if (bytes > 0) scope.launch { snackbar.showSnackbar("Freed ${formatSize(context, bytes)}") }
+    }
+    val trash = rememberTrashLauncher(prefs) { _, bytes -> handleTrashed(bytes) }
+
+    if (showReview) {
+        ReviewScreen(
+            prefs = prefs,
+            onClose = {
+                showReview = false
+                pendingCount = prefs.pendingIds.size
+                reload++
+            },
+            onTrashed = { _, bytes ->
+                showReview = false
+                handleTrashed(bytes)
+            },
+        )
+        return
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
                 title = { Text("FotoSort") },
@@ -120,7 +151,7 @@ fun FolderScreen(prefs: Prefs, onOpen: (Folder) -> Unit, onSettings: () -> Unit)
                                     .setData(Uri.fromParts("package", context.packageName, null)),
                             )
                         } else {
-                            permissionLauncher.launch(imagePermission)
+                            permissionLauncher.launch(mediaPermissions)
                         }
                     },
                 )
@@ -130,6 +161,7 @@ fun FolderScreen(prefs: Prefs, onOpen: (Folder) -> Unit, onSettings: () -> Unit)
                     folders = folders!!,
                     keptIds = if (prefs.skipKept) prefs.keptIds else emptySet(),
                     pendingCount = pendingCount,
+                    onReview = { showReview = true },
                     onTrash = trash,
                     onOpen = onOpen,
                 )
@@ -146,7 +178,7 @@ private fun PermissionPrompt(onGrant: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            "FotoSort needs access to your photos to show your folders.",
+            "FotoSort needs access to your photos and videos to show your folders.",
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyLarge,
         )
@@ -160,6 +192,7 @@ private fun FolderGrid(
     folders: List<Folder>,
     keptIds: Set<Long>,
     pendingCount: Int,
+    onReview: () -> Unit,
     onTrash: () -> Unit,
     onOpen: (Folder) -> Unit,
 ) {
@@ -174,16 +207,14 @@ private fun FolderGrid(
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
                     Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("$pendingCount marked for trash", Modifier.weight(1f))
-                        FilledTonalButton(onClick = onTrash) {
-                            Icon(Icons.Filled.Delete, contentDescription = null)
-                            Text("Move to trash", Modifier.padding(start = 8.dp))
-                        }
+                        TextButton(onClick = onReview) { Text("Review") }
+                        FilledTonalButton(onClick = onTrash) { Text("Move to trash") }
                     }
                 }
             }
         }
         items(folders, key = { it.id }) { folder ->
-            val left = folder.photoIds.count { it !in keptIds }
+            val left = folder.mediaIds.count { it !in keptIds }
             Column(Modifier.clip(RoundedCornerShape(12.dp)).clickable { onOpen(folder) }) {
                 AsyncImage(
                     model = folder.coverUri,
@@ -198,9 +229,9 @@ private fun FolderGrid(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 6.dp, start = 4.dp, end = 4.dp),
                 )
-                val total = folder.photoIds.size
+                val total = folder.mediaIds.size
                 Text(
-                    if (left == total) "$total photos" else "$total photos · $left left",
+                    if (left == total) "$total items" else "$total items · $left left",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp),
