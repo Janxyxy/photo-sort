@@ -1,15 +1,66 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M34,36h40a4,4 0,0 1,4 4v28a4,4 0,0 1,-4 4h-40a4,4 0,0 1,-4 -4v-28a4,4 0,0 1,4 -4z" />
-    <path
-        android:fillColor="#3949AB"
-        android:pathData="M34,68l12,-15 8,9 6,-6 14,12z" />
-    <path
-        android:fillColor="#FFB300"
-        android:pathData="M58,46a4,4 0,1 0,8 0a4,4 0,1 0,-8 0z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="1.08"
+        android:scaleY="1.08">
+        <!-- card underneath, tilted left -->
+        <group
+            android:pivotX="54"
+            android:pivotY="54"
+            android:rotation="-12"
+            android:translateX="-5">
+            <path
+                android:fillAlpha="0.45"
+                android:fillColor="#FFFFFF"
+                android:pathData="M40,32h28a4,4 0,0 1,4 4v36a4,4 0,0 1,-4 4h-28a4,4 0,0 1,-4 -4v-36a4,4 0,0 1,4 -4z" />
+        </group>
+        <!-- top card being swiped right -->
+        <group
+            android:pivotX="54"
+            android:pivotY="54"
+            android:rotation="9"
+            android:translateX="3">
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M40,32h28a4,4 0,0 1,4 4v36a4,4 0,0 1,-4 4h-28a4,4 0,0 1,-4 -4v-36a4,4 0,0 1,4 -4z" />
+            <path android:pathData="M41,35h26a2,2 0,0 1,2 2v26h-30v-26a2,2 0,0 1,2 -2z">
+                <aapt:attr name="android:fillColor">
+                    <gradient
+                        android:endX="54"
+                        android:endY="63"
+                        android:startX="54"
+                        android:startY="35"
+                        android:type="linear">
+                        <item android:color="#FFC7D2FE" android:offset="0" />
+                        <item android:color="#FFE0E7FF" android:offset="1" />
+                    </gradient>
+                </aapt:attr>
+            </path>
+            <path
+                android:fillColor="#FFF59E0B"
+                android:pathData="M45,42a3.5,3.5 0,1 0,7 0a3.5,3.5 0,1 0,-7 0z" />
+            <path
+                android:fillColor="#FF818CF8"
+                android:pathData="M50,63l9,-11 10,9v2z" />
+            <path
+                android:fillColor="#FF4F46E5"
+                android:pathData="M39,63v-4l9,-10 12,14z" />
+        </group>
+        <!-- keep badge -->
+        <path
+            android:fillColor="#FF22C55E"
+            android:pathData="M59,36a9,9 0,1 0,18 0a9,9 0,1 0,-18 0z" />
+        <path
+            android:pathData="M63.5,36.5l3,3 6,-6.5"
+            android:strokeWidth="2.6"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
 </vector>
