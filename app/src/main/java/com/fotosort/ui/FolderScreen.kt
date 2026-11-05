@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -103,6 +102,7 @@ fun FolderScreen(
     var reload by remember { mutableIntStateOf(0) }
     var pendingCount by remember { mutableIntStateOf(prefs.pendingIds.size) }
     var showReview by remember { mutableStateOf(false) }
+    var listLayout by remember { mutableStateOf(prefs.listLayout) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     LaunchedEffect(granted, reload) {
@@ -139,6 +139,10 @@ fun FolderScreen(
             TopAppBar(
                 title = { Text("FotoSort") },
                 actions = {
+                    LayoutToggleButton(listLayout) {
+                        listLayout = !listLayout
+                        prefs.listLayout = listLayout
+                    }
                     IconButton(onClick = onSettings) {
                         Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
@@ -167,6 +171,7 @@ fun FolderScreen(
                     folders = folders!!,
                     keptIds = if (prefs.skipKept) prefs.keptIds else emptySet(),
                     pendingCount = pendingCount,
+                    listLayout = listLayout,
                     onReview = { showReview = true },
                     onTrash = trash,
                     onOpen = onOpen,
@@ -198,15 +203,16 @@ private fun FolderGrid(
     folders: List<Folder>,
     keptIds: Set<Long>,
     pendingCount: Int,
+    listLayout: Boolean,
     onReview: () -> Unit,
     onTrash: () -> Unit,
     onOpen: (Folder) -> Unit,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 160.dp),
+        columns = folderColumns(listLayout),
         contentPadding = PaddingValues(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = folderSpacing(listLayout),
     ) {
         if (pendingCount > 0) {
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -220,7 +226,7 @@ private fun FolderGrid(
             }
         }
         items(folders, key = { it.id }) { folder ->
-            FolderCard(folder, keptIds, onOpen)
+            FolderItem(folder, keptIds, listLayout, onOpen)
         }
     }
 }
@@ -228,7 +234,6 @@ private fun FolderGrid(
 /** Cover, name and "N items · M left"; also used for the categories. */
 @Composable
 fun FolderCard(folder: Folder, keptIds: Set<Long>, onOpen: (Folder) -> Unit) {
-    val left = folder.mediaIds.count { it !in keptIds }
     Column(Modifier.clip(RoundedCornerShape(12.dp)).clickable { onOpen(folder) }) {
         AsyncImage(
             model = folder.coverUri,
@@ -243,9 +248,8 @@ fun FolderCard(folder: Folder, keptIds: Set<Long>, onOpen: (Folder) -> Unit) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 6.dp, start = 4.dp, end = 4.dp),
         )
-        val total = folder.mediaIds.size
         Text(
-            (if (total == 1) "1 item" else "$total items") + if (left == total) "" else " · $left left",
+            folderCountText(folder, keptIds),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp),

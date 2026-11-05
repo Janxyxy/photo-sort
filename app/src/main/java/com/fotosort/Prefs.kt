@@ -25,6 +25,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_GROUP_SIMILAR, true)
         set(value) = sp.edit { putBoolean(KEY_GROUP_SIMILAR, value) }
 
+    /** Folders and categories as full-width rows instead of a grid of tiles. */
+    var listLayout: Boolean
+        get() = sp.getBoolean(KEY_LIST_LAYOUT, false)
+        set(value) = sp.edit { putBoolean(KEY_LIST_LAYOUT, value) }
+
     var sortOrder: SortOrder
         get() = sp.getString(KEY_SORT, null)
             ?.let { name -> SortOrder.entries.firstOrNull { it.name == name } }
@@ -80,6 +85,7 @@ class Prefs(context: Context) {
         const val KEY_INCLUDE_VIDEOS = "include_videos"
         const val KEY_GROUP_SIMILAR = "group_similar"
         const val KEY_SORT = "sort_order"
+        const val KEY_LIST_LAYOUT = "list_layout"
         const val KEY_FREED = "freed_bytes"
     }
 }

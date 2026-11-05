@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -76,6 +75,7 @@ fun CategoriesScreen(
     var photos by remember { mutableStateOf<List<Media>?>(null) }
     var sections by remember { mutableStateOf<List<CategorySection>>(emptyList()) }
     var analyzedCount by remember { mutableStateOf(0) }
+    var listLayout by remember { mutableStateOf(prefs.listLayout) }
     LaunchedEffect(granted) {
         if (granted) photos = MediaRepository.loadAllImages(context)
     }
@@ -91,6 +91,10 @@ fun CategoriesScreen(
             TopAppBar(
                 title = { Text("Categories") },
                 actions = {
+                    LayoutToggleButton(listLayout) {
+                        listLayout = !listLayout
+                        prefs.listLayout = listLayout
+                    }
                     IconButton(onClick = onSettings) {
                         Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
@@ -108,10 +112,10 @@ fun CategoriesScreen(
                 )
                 library == null -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 else -> LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 160.dp),
+                    columns = folderColumns(listLayout),
                     contentPadding = PaddingValues(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = folderSpacing(listLayout),
                 ) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         ScanCard(
@@ -132,7 +136,7 @@ fun CategoriesScreen(
                             )
                         }
                         items(section.folders, key = { it.id }) { folder ->
-                            FolderCard(folder, keptIds, onOpen)
+                            FolderItem(folder, keptIds, listLayout, onOpen)
                         }
                     }
                 }
