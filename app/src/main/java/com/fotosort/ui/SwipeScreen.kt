@@ -102,7 +102,7 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
     val similar by remember { derivedStateOf { if (groupSimilar) similarGroups(items) else emptyMap() } }
 
     LaunchedEffect(folder.id) {
-        val all = MediaRepository.loadMedia(context, folder.id, prefs.includeVideos, prefs.sortOrder)
+        val all = MediaRepository.loadFolder(context, folder, prefs.includeVideos, prefs.sortOrder)
         items += if (prefs.skipKept) all.filter { it.id !in prefs.keptIds } else all
         loaded = true
     }

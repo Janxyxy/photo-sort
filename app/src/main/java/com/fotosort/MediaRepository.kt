@@ -9,7 +9,17 @@ import android.provider.MediaStore.Files.FileColumns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-data class Folder(val id: Long, val name: String, val coverUri: Uri, val mediaIds: List<Long>)
+/**
+ * A set of items to sort. Usually a MediaStore bucket; a [virtual] folder is a category
+ * (screenshots, receipts, ...) whose items come from any bucket.
+ */
+data class Folder(
+    val id: Long,
+    val name: String,
+    val coverUri: Uri,
+    val mediaIds: List<Long>,
+    val virtual: Boolean = false,
+)
 
 data class Media(
     val id: Long,
@@ -107,6 +117,28 @@ object MediaRepository {
             arrayOf(bucketId.toString()),
             orderBy(sort),
         )?.use { it.readMedia() } ?: emptyList()
+    }
+
+    /** Every photo on the device, newest first. */
+    suspend fun loadAllImages(context: Context): List<Media> = withContext(Dispatchers.IO) {
+        context.contentResolver.query(
+            files,
+            mediaProjection,
+            typeSelection(includeVideos = false),
+            null,
+            orderBy(SortOrder.NewestFirst),
+        )?.use { it.readMedia() } ?: emptyList()
+    }
+
+    /** Items of a [Folder]: a bucket query, or for a virtual folder its ids sorted like a bucket would be. */
+    suspend fun loadFolder(context: Context, folder: Folder, includeVideos: Boolean, sort: SortOrder): List<Media> {
+        if (!folder.virtual) return loadMedia(context, folder.id, includeVideos, sort)
+        val items = loadByIds(context, folder.mediaIds).filter { includeVideos || !it.isVideo }
+        return when (sort) {
+            SortOrder.NewestFirst -> items.sortedByDescending { it.displayDateMs }
+            SortOrder.OldestFirst -> items.sortedBy { it.displayDateMs }
+            SortOrder.LargestFirst -> items.sortedByDescending { it.size }
+        }
     }
 
     /** Returns the items of [ids] that still exist (and are not already trashed). */

@@ -75,7 +75,12 @@ private val mediaPermissions =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FolderScreen(prefs: Prefs, onOpen: (Folder) -> Unit, onSettings: () -> Unit) {
+fun FolderScreen(
+    prefs: Prefs,
+    onOpen: (Folder) -> Unit,
+    onSettings: () -> Unit,
+    bottomBar: @Composable () -> Unit = {},
+) {
     val context = LocalContext.current
     fun hasAccess() = context.checkSelfPermission(mediaPermissions[0]) == PackageManager.PERMISSION_GRANTED
 
@@ -129,6 +134,7 @@ fun FolderScreen(prefs: Prefs, onOpen: (Folder) -> Unit, onSettings: () -> Unit)
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
+        bottomBar = bottomBar,
         topBar = {
             TopAppBar(
                 title = { Text("FotoSort") },
@@ -214,29 +220,35 @@ private fun FolderGrid(
             }
         }
         items(folders, key = { it.id }) { folder ->
-            val left = folder.mediaIds.count { it !in keptIds }
-            Column(Modifier.clip(RoundedCornerShape(12.dp)).clickable { onOpen(folder) }) {
-                AsyncImage(
-                    model = folder.coverUri,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)),
-                )
-                Text(
-                    folder.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 6.dp, start = 4.dp, end = 4.dp),
-                )
-                val total = folder.mediaIds.size
-                Text(
-                    if (left == total) "$total items" else "$total items · $left left",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp),
-                )
-            }
+            FolderCard(folder, keptIds, onOpen)
         }
+    }
+}
+
+/** Cover, name and "N items · M left"; also used for the categories. */
+@Composable
+fun FolderCard(folder: Folder, keptIds: Set<Long>, onOpen: (Folder) -> Unit) {
+    val left = folder.mediaIds.count { it !in keptIds }
+    Column(Modifier.clip(RoundedCornerShape(12.dp)).clickable { onOpen(folder) }) {
+        AsyncImage(
+            model = folder.coverUri,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)),
+        )
+        Text(
+            folder.name,
+            style = MaterialTheme.typography.titleSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 6.dp, start = 4.dp, end = 4.dp),
+        )
+        val total = folder.mediaIds.size
+        Text(
+            (if (total == 1) "1 item" else "$total items") + if (left == total) "" else " · $left left",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp),
+        )
     }
 }

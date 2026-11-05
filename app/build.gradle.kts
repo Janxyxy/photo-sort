@@ -35,6 +35,17 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // Eye's native library is ~57 MB per ABI, so build one APK per ABI instead of a universal one.
+    // The Eye SDK only ships arm64-v8a (phones) and x86_64 (emulators).
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "x86_64")
+            isUniversalApk = false
+        }
+    }
 }
 
 dependencies {
@@ -46,4 +57,5 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("io.coil-kt:coil-video:2.7.0")
+    implementation("ai.desertant:eye:4.3.0")
 }

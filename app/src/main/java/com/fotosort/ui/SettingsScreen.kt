@@ -30,8 +30,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import com.fotosort.Prefs
 import com.fotosort.SortOrder
+import com.fotosort.app
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +48,10 @@ fun SettingsScreen(prefs: Prefs, onBack: () -> Unit) {
     var sortOrder by remember { mutableStateOf(prefs.sortOrder) }
     var keptCount by remember { mutableIntStateOf(prefs.keptIds.size) }
     var confirmClear by remember { mutableStateOf(false) }
+    var confirmClearAnalysis by remember { mutableStateOf(false) }
+    var analyzedCount by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) { analyzedCount = context.app.eyeIndex.snapshot().size }
 
     Scaffold(
         topBar = {
@@ -107,6 +115,11 @@ fun SettingsScreen(prefs: Prefs, onBack: () -> Unit) {
                 supportingContent = { Text("$keptCount items remembered as kept") },
                 modifier = Modifier.clickable(enabled = keptCount > 0) { confirmClear = true },
             )
+            ListItem(
+                headlineContent = { Text("Clear photo analysis") },
+                supportingContent = { Text("$analyzedCount photos analyzed for categories") },
+                modifier = Modifier.clickable(enabled = analyzedCount > 0) { confirmClearAnalysis = true },
+            )
             HorizontalDivider()
             Text(
                 "Swipe left to keep, right to delete, up and down to browse without deciding. " +
@@ -133,6 +146,25 @@ fun SettingsScreen(prefs: Prefs, onBack: () -> Unit) {
             },
             dismissButton = {
                 TextButton(onClick = { confirmClear = false }) { Text("Cancel") }
+            },
+        )
+    }
+
+    if (confirmClearAnalysis) {
+        AlertDialog(
+            onDismissRequest = { confirmClearAnalysis = false },
+            title = { Text("Clear photo analysis?") },
+            text = { Text("Categories will be empty until you analyze your photos again. The downloaded model stays.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    context.app.eyeScanner.stop()
+                    scope.launch { context.app.eyeIndex.clear() }
+                    analyzedCount = 0
+                    confirmClearAnalysis = false
+                }) { Text("Clear") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClearAnalysis = false }) { Text("Cancel") }
             },
         )
     }
