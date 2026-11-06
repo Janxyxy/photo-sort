@@ -21,3 +21,12 @@ fun formatDuration(ms: Long): String {
 
 /** 12345 -> "12,345" in the user's locale. */
 fun formatCount(n: Int): String = NumberFormat.getIntegerInstance().format(n)
+
+fun timeLeft(ms: Long): String {
+    val minutes = ms / 60_000
+    return when {
+        minutes < 1 -> "under a minute left"
+        minutes < 90 -> "about $minutes min left"
+        else -> "about ${(minutes + 30) / 60} h left"
+    }
+}

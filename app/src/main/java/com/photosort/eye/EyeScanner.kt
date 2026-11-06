@@ -61,7 +61,8 @@ class EyeScanner(private val context: Context, private val index: EyeIndex) {
     val state: StateFlow<ScanState> = _state.asStateFlow()
 
     /** Set by [stop] so [autoStart] doesn't undo a pause. */
-    private var pausedByUser = false
+    var pausedByUser = false
+        private set
 
     fun start() {
         pausedByUser = false
@@ -94,11 +95,12 @@ class EyeScanner(private val context: Context, private val index: EyeIndex) {
             }
             val alreadyDone = all.size - todo.size
             Eye(context).use { eye ->
-                if (!eye.isDownloaded()) {
-                    if (auto) return
-                    _state.value = ScanState.Downloading
-                    eye.download()
-                }
+                val needsDownload = !eye.isDownloaded()
+                if (needsDownload && auto) return
+                // set the state before starting the service, which stops itself on Idle
+                _state.value = if (needsDownload) ScanState.Downloading else ScanState.Scanning(alreadyDone, all.size, null)
+                ScanService.start(context)
+                if (needsDownload) eye.download()
                 val started = SystemClock.elapsedRealtime()
                 var lastNotify = started
                 todo.forEachIndexed { i, media ->

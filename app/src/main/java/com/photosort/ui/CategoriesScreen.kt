@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -119,6 +121,19 @@ fun CategoriesScreen(
     val scanner = context.app.eyeScanner
     val index = context.app.eyeIndex
     val state by scanner.state.collectAsState()
+    // the scan runs either way; without the permission there is just no progress notification
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        scanner.start()
+    }
+    val startScan = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            scanner.start()
+        }
+    }
     val version by index.version.collectAsState()
 
     val permission =
@@ -248,7 +263,7 @@ fun CategoriesScreen(
                                         state = state,
                                         analyzed = analyzedCount,
                                         total = library.size,
-                                        onStart = scanner::start,
+                                        onStart = startScan,
                                         onStop = scanner::stop,
                                         modifier = Modifier.padding(horizontal = 12.dp),
                                     )
@@ -610,14 +625,5 @@ private fun ScanCard(
                 }
             }
         }
-    }
-}
-
-private fun timeLeft(ms: Long): String {
-    val minutes = ms / 60_000
-    return when {
-        minutes < 1 -> "under a minute left"
-        minutes < 90 -> "about $minutes min left"
-        else -> "about ${(minutes + 30) / 60} h left"
     }
 }

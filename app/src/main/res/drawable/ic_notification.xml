@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="60"
+    android:viewportHeight="60">
+    <!-- the launcher's camera, cropped to fill the status bar icon -->
+    <group
+        android:translateX="-24"
+        android:translateY="-24.5">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M44,36L47,31H61L64,36H74a8,8 0,0 1,8 8V70a8,8 0,0 1,-8 8H34a8,8 0,0 1,-8 -8V44a8,8 0,0 1,8 -8Z M39,57a15,15 0,1 0,30 0a15,15 0,1 0,-30 0Z M71.5,44a2.5,2.5 0,1 0,5 0a2.5,2.5 0,1 0,-5 0Z" />
+        <path
+            android:pathData="M47.5,57.3L52,61.8L60.5,52.8"
+            android:strokeWidth="4.5"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>
