@@ -1,4 +1,4 @@
-package com.fotosort.ui
+package com.photosort.ui
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -10,7 +10,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import com.fotosort.ThemeMode
+import com.photosort.ThemeMode
 
 val KeepColor = Color(0xFF2E7D32)
 val TrashColor = Color(0xFFC62828)

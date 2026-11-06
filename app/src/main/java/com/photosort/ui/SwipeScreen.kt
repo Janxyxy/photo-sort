@@ -1,4 +1,4 @@
-package com.fotosort.ui
+package com.photosort.ui
 
 import android.os.Build
 import android.view.HapticFeedbackConstants
@@ -75,10 +75,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.fotosort.Folder
-import com.fotosort.Media
-import com.fotosort.MediaRepository
-import com.fotosort.Prefs
+import com.photosort.Folder
+import com.photosort.Media
+import com.photosort.MediaRepository
+import com.photosort.Prefs
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 

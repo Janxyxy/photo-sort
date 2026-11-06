@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.fotosort"
+    namespace = "com.photosort"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.fotosort"
+        applicationId = "com.photosort"
         // MediaStore.createTrashRequest needs Android 11 (API 30)
         minSdk = 30
         targetSdk = 35

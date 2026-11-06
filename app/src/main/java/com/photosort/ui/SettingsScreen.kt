@@ -1,4 +1,4 @@
-package com.fotosort.ui
+package com.photosort.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -32,10 +32,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
-import com.fotosort.Prefs
-import com.fotosort.SortOrder
-import com.fotosort.ThemeMode
-import com.fotosort.app
+import com.photosort.Prefs
+import com.photosort.SortOrder
+import com.photosort.ThemeMode
+import com.photosort.app
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

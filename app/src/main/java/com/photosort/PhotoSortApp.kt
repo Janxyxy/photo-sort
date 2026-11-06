@@ -1,12 +1,12 @@
-package com.fotosort
+package com.photosort
 
 import android.app.Application
 import android.content.Context
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.decode.VideoFrameDecoder
-import com.fotosort.eye.EyeIndex
-import com.fotosort.eye.EyeScanner
+import com.photosort.eye.EyeIndex
+import com.photosort.eye.EyeScanner
 
 class PhotoSortApp : Application(), ImageLoaderFactory {
     val eyeIndex by lazy { EyeIndex(this) }

@@ -1,4 +1,4 @@
-package com.fotosort.eye
+package com.photosort.eye
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers

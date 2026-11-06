@@ -1,4 +1,4 @@
-package com.fotosort
+package com.photosort
 
 import android.content.Context
 import androidx.compose.runtime.getValue
@@ -12,7 +12,7 @@ import androidx.core.content.edit
  * - pending: items swiped right that are waiting to be moved to the system trash
  */
 class Prefs(context: Context) {
-    private val sp = context.getSharedPreferences("fotosort", Context.MODE_PRIVATE)
+    private val sp = context.getSharedPreferences("photosort", Context.MODE_PRIVATE)
     private val kept = sp.getStringSet(KEY_KEPT, emptySet())!!.mapTo(HashSet()) { it.toLong() }
     private val pending = sp.getStringSet(KEY_PENDING, emptySet())!!.mapTo(HashSet()) { it.toLong() }
 

@@ -1,4 +1,4 @@
-package com.fotosort.eye
+package com.photosort.eye
 
 import ai.desertant.eye.Eye
 import ai.desertant.eye.EyeException
@@ -11,7 +11,7 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Process
 import android.os.SystemClock
-import com.fotosort.MediaRepository
+import com.photosort.MediaRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher

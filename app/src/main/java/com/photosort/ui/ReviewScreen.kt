@@ -1,4 +1,4 @@
-package com.fotosort.ui
+package com.photosort.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -47,9 +47,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.fotosort.Media
-import com.fotosort.MediaRepository
-import com.fotosort.Prefs
+import com.photosort.Media
+import com.photosort.MediaRepository
+import com.photosort.Prefs
 
 /**
  * Grid of everything marked for trash. Tapping an item rescues it (it becomes kept);

@@ -1,4 +1,4 @@
-package com.fotosort.ui
+package com.photosort.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,7 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.fotosort.Media
+import com.photosort.Media
 
 /** Photos taken at most this far apart (chained) count as one burst. */
 private const val SIMILAR_GAP_MS = 3_000L

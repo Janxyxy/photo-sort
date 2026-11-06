@@ -1,4 +1,4 @@
-package com.fotosort.ui
+package com.photosort.ui
 
 import android.Manifest
 import android.content.Context
@@ -71,17 +71,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import com.fotosort.Folder
-import com.fotosort.Media
-import com.fotosort.MediaRepository
-import com.fotosort.Prefs
-import com.fotosort.app
-import com.fotosort.eye.CategorySection
-import com.fotosort.eye.SECTION_CLEAN_UP
-import com.fotosort.eye.ScanState
-import com.fotosort.eye.buildSections
-import com.fotosort.eye.popularTags
-import com.fotosort.eye.searchTags
+import com.photosort.Folder
+import com.photosort.Media
+import com.photosort.MediaRepository
+import com.photosort.Prefs
+import com.photosort.app
+import com.photosort.eye.CategorySection
+import com.photosort.eye.SECTION_CLEAN_UP
+import com.photosort.eye.ScanState
+import com.photosort.eye.buildSections
+import com.photosort.eye.popularTags
+import com.photosort.eye.searchTags
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

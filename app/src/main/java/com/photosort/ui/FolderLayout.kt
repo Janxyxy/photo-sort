@@ -1,4 +1,4 @@
-package com.fotosort.ui
+package com.photosort.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +29,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.fotosort.Folder
+import com.photosort.Folder
 
 /** Columns for the folder/category lists: tiles in grid mode, one full-width row each in list mode. */
 fun folderColumns(listLayout: Boolean): GridCells =

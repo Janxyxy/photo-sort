@@ -1,4 +1,4 @@
-package com.fotosort
+package com.photosort
 
 import android.content.ContentUris
 import android.content.Context

@@ -1,4 +1,4 @@
-package com.fotosort.ui
+package com.photosort.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
@@ -31,7 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.fotosort.Media
+import com.photosort.Media
 
 /**
  * Decide on many items at once instead of swiping each: selected ones get marked for trash, the

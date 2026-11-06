@@ -1,4 +1,4 @@
-package com.fotosort.ui
+package com.photosort.ui
 
 import android.widget.MediaController
 import android.widget.VideoView
@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.fotosort.Media
+import com.photosort.Media
 
 @Composable
 fun VideoPlayerDialog(media: Media, onDismiss: () -> Unit) {

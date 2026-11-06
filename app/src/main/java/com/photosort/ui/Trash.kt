@@ -1,4 +1,4 @@
-package com.fotosort.ui
+package com.photosort.ui
 
 import android.app.Activity
 import android.provider.MediaStore
@@ -12,9 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import com.fotosort.Media
-import com.fotosort.MediaRepository
-import com.fotosort.Prefs
+import com.photosort.Media
+import com.photosort.MediaRepository
+import com.photosort.Prefs
 import kotlinx.coroutines.launch
 
 /**

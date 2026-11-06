@@ -1,4 +1,4 @@
-package com.fotosort
+package com.photosort
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -21,13 +21,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.fotosort.ui.CategoriesScreen
-import com.fotosort.ui.CategoriesState
-import com.fotosort.ui.FolderScreen
-import com.fotosort.ui.PhotoSortTheme
-import com.fotosort.ui.SettingsScreen
-import com.fotosort.ui.SwipeScreen
-import com.fotosort.ui.isDark
+import com.photosort.ui.CategoriesScreen
+import com.photosort.ui.CategoriesState
+import com.photosort.ui.FolderScreen
+import com.photosort.ui.PhotoSortTheme
+import com.photosort.ui.SettingsScreen
+import com.photosort.ui.SwipeScreen
+import com.photosort.ui.isDark
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

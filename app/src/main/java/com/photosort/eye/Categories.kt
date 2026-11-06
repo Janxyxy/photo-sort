@@ -1,8 +1,8 @@
-package com.fotosort.eye
+package com.photosort.eye
 
-import com.fotosort.Folder
-import com.fotosort.Media
-import com.fotosort.ui.similarGroups
+import com.photosort.Folder
+import com.photosort.Media
+import com.photosort.ui.similarGroups
 import kotlin.math.absoluteValue
 
 /** A category matches a photo that has any of its Eye [tags]. */

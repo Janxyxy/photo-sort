@@ -1,4 +1,4 @@
-package com.fotosort.ui
+package com.photosort.ui
 
 import android.Manifest
 import android.content.Intent
@@ -59,9 +59,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import coil.compose.AsyncImage
-import com.fotosort.Folder
-import com.fotosort.MediaRepository
-import com.fotosort.Prefs
+import com.photosort.Folder
+import com.photosort.MediaRepository
+import com.photosort.Prefs
 import kotlinx.coroutines.launch
 
 /** The first entry decides whether the app can work; videos are optional. */
