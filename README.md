@@ -3,7 +3,7 @@
 ![Android 11+](https://img.shields.io/badge/Android-11%2B-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)
-![On-device AI](https://img.shields.io/badge/AI-on--device-orange)
+![On-device AI](https://img.shields.io/badge/On--device%20AI-FF6F00)
 
 A swipe-to-clean photo app for Android. Open a folder and go through it one photo at a time:
 
