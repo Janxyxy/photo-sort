@@ -31,6 +31,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -67,11 +69,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -96,6 +100,7 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
     var bulk by remember { mutableStateOf(false) }
     var similarGroup by remember { mutableStateOf<List<Media>?>(null) }
     var playing by remember { mutableStateOf<Media?>(null) }
+    var info by remember { mutableStateOf<Media?>(null) }
     val history = remember { mutableStateListOf<Step>() }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -143,6 +148,12 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
             notify("Freed ${formatSize(context, bytes)}")
         }
         marked = prefs.pendingIds.toSet()
+    }
+
+    val toggleFavorite = rememberFavoriteToggle { media, favorite ->
+        val i = items.indexOfFirst { it.id == media.id }
+        if (i >= 0) items[i] = items[i].copy(isFavorite = favorite)
+        notify(if (favorite) "Added to favourites" else "Removed from favourites")
     }
 
     val trash = rememberTrashLauncher(prefs) { trashed, bytes ->
@@ -237,7 +248,12 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
                         },
                         title = {
                             Column {
-                                Text(folder.name, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    folder.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                                 if (items.isNotEmpty()) {
                                     Text(
                                         "${minOf(index + 1, items.size)} / ${items.size}",
@@ -314,6 +330,9 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
                             onPrevious = { if (index > 0) index-- },
                             onOpenSimilar = { similarGroup = group },
                             onPlay = { playing = current },
+                            onInfo = { info = current },
+                            onFavorite = { toggleFavorite(current) },
+                            onShare = { shareMedia(context, current) },
                         )
                         DecisionBar(rightKeeps, onKeep = { decide(keep = true) }, onTrash = { decide(keep = false) })
                     }
@@ -342,6 +361,7 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
             )
         }
         playing?.let { VideoPlayerDialog(it, onDismiss = { playing = null }) }
+        info?.let { MediaInfoSheet(it, onDismiss = { info = null }) }
     }
 }
 
@@ -391,6 +411,9 @@ private fun SwipeDeck(
     onPrevious: () -> Unit,
     onOpenSimilar: () -> Unit,
     onPlay: () -> Unit,
+    onInfo: () -> Unit,
+    onFavorite: () -> Unit,
+    onShare: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val view = LocalView.current
@@ -600,14 +623,27 @@ private fun SwipeDeck(
                         Modifier.align(Alignment.TopCenter).padding(top = 12.dp),
                     )
                 }
-                InfoPill(current, Modifier.align(Alignment.BottomStart).padding(12.dp))
-                if (similarCount > 1) {
-                    Pill(
-                        "$similarCount similar",
-                        MaterialTheme.colorScheme.primary,
-                        Modifier.align(Alignment.BottomEnd).padding(12.dp),
-                        textColor = MaterialTheme.colorScheme.onPrimary,
-                        onClick = onOpenSimilar,
+                InfoPill(current, Modifier.align(Alignment.BottomStart).padding(12.dp), onClick = onInfo)
+                Row(
+                    Modifier.align(Alignment.BottomEnd).padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (similarCount > 1) {
+                        Pill(
+                            "$similarCount similar",
+                            MaterialTheme.colorScheme.primary,
+                            Modifier,
+                            textColor = MaterialTheme.colorScheme.onPrimary,
+                            onClick = onOpenSimilar,
+                        )
+                    }
+                    RoundIconButton(Icons.Filled.Share, "Share", Color.White, onShare)
+                    RoundIconButton(
+                        Icons.Filled.Star,
+                        if (current.isFavorite) "Remove from favourites" else "Add to favourites",
+                        if (current.isFavorite) FavoriteColor else Color.White.copy(alpha = 0.7f),
+                        onFavorite,
                     )
                 }
             }
@@ -629,6 +665,23 @@ private fun MediaCard(media: Media, modifier: Modifier) {
 }
 
 @Composable
+private fun RoundIconButton(icon: ImageVector, description: String, tint: Color, onClick: () -> Unit) {
+    Icon(
+        icon,
+        contentDescription = description,
+        tint = tint,
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.55f))
+            .clickable(onClick = onClick)
+            .padding(8.dp),
+    )
+}
+
+private val FavoriteColor = Color(0xFFFFC107)
+
+@Composable
 private fun PlayBadge(modifier: Modifier) {
     Icon(
         Icons.Filled.PlayArrow,
@@ -642,14 +695,14 @@ private fun PlayBadge(modifier: Modifier) {
 }
 
 @Composable
-private fun InfoPill(media: Media, modifier: Modifier) {
+private fun InfoPill(media: Media, modifier: Modifier, onClick: () -> Unit) {
     val context = LocalContext.current
     val parts = buildList {
         add(formatDate(media.displayDateMs))
         add(formatSize(context, media.size))
         if (media.isVideo) add(formatDuration(media.durationMs))
     }
-    Pill(parts.joinToString(" · "), Color.Black.copy(alpha = 0.55f), modifier)
+    Pill(parts.joinToString(" · ") + "  ⓘ", Color.Black.copy(alpha = 0.55f), modifier, onClick = onClick)
 }
 
 @Composable

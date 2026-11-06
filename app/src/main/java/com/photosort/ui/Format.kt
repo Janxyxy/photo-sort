@@ -10,6 +10,9 @@ fun formatSize(context: Context, bytes: Long): String = Formatter.formatShortFil
 
 fun formatDate(ms: Long): String = DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(ms))
 
+fun formatDateTime(ms: Long): String =
+    DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(ms))
+
 fun formatDuration(ms: Long): String {
     val seconds = ms / 1000
     return if (seconds >= 3600) {

@@ -30,9 +30,22 @@ data class Media(
     val takenMs: Long,
     val addedMs: Long,
     val durationMs: Long,
+    /** starred in the gallery (MediaStore's favourite flag) */
+    val isFavorite: Boolean = false,
 ) {
     val displayDateMs: Long get() = if (takenMs > 0) takenMs else addedMs
 }
+
+data class MediaDetails(
+    val name: String,
+    /** relative to the storage root, e.g. "DCIM/Camera/" */
+    val folder: String,
+    val onSdCard: Boolean,
+    val mimeType: String?,
+    val width: Int,
+    val height: Int,
+    val modifiedMs: Long,
+)
 
 enum class SortOrder(val label: String) {
     NewestFirst("Newest first"),
@@ -57,6 +70,7 @@ object MediaRepository {
         FileColumns.DATE_TAKEN,
         FileColumns.DATE_ADDED,
         FileColumns.DURATION,
+        FileColumns.IS_FAVORITE,
     )
 
     fun uriFor(id: Long, isVideo: Boolean): Uri = ContentUris.withAppendedId(if (isVideo) videos else images, id)
@@ -154,6 +168,38 @@ object MediaRepository {
         }
     }
 
+    /** File details for the info sheet; null if the item is gone. */
+    suspend fun loadDetails(context: Context, media: Media): MediaDetails? = withContext(Dispatchers.IO) {
+        val projection = arrayOf(
+            FileColumns.DISPLAY_NAME,
+            FileColumns.RELATIVE_PATH,
+            FileColumns.VOLUME_NAME,
+            FileColumns.MIME_TYPE,
+            FileColumns.WIDTH,
+            FileColumns.HEIGHT,
+            FileColumns.ORIENTATION,
+            FileColumns.DATE_MODIFIED,
+        )
+        context.contentResolver.query(media.uri, projection, null, null, null)?.use { c ->
+            if (!c.moveToFirst()) return@use null
+            fun str(col: String) = c.getString(c.getColumnIndexOrThrow(col))
+            fun long(col: String) = c.getLong(c.getColumnIndexOrThrow(col))
+            val width = long(FileColumns.WIDTH).toInt()
+            val height = long(FileColumns.HEIGHT).toInt()
+            // stored as encoded; a 90/270 rotation shows the photo the other way round
+            val rotated = long(FileColumns.ORIENTATION) % 180 == 90L
+            MediaDetails(
+                name = str(FileColumns.DISPLAY_NAME) ?: "",
+                folder = str(FileColumns.RELATIVE_PATH) ?: "",
+                onSdCard = str(FileColumns.VOLUME_NAME) != MediaStore.VOLUME_EXTERNAL_PRIMARY,
+                mimeType = str(FileColumns.MIME_TYPE),
+                width = if (rotated) height else width,
+                height = if (rotated) width else height,
+                modifiedMs = long(FileColumns.DATE_MODIFIED) * 1000,
+            )
+        }
+    }
+
     private fun Cursor.readMedia(): List<Media> {
         val idCol = getColumnIndexOrThrow(FileColumns._ID)
         val typeCol = getColumnIndexOrThrow(FileColumns.MEDIA_TYPE)
@@ -161,6 +207,7 @@ object MediaRepository {
         val takenCol = getColumnIndexOrThrow(FileColumns.DATE_TAKEN)
         val addedCol = getColumnIndexOrThrow(FileColumns.DATE_ADDED)
         val durationCol = getColumnIndexOrThrow(FileColumns.DURATION)
+        val favoriteCol = getColumnIndexOrThrow(FileColumns.IS_FAVORITE)
         val result = mutableListOf<Media>()
         while (moveToNext()) {
             val id = getLong(idCol)
@@ -173,6 +220,7 @@ object MediaRepository {
                 takenMs = getLong(takenCol),
                 addedMs = getLong(addedCol) * 1000,
                 durationMs = getLong(durationCol),
+                isFavorite = getInt(favoriteCol) == 1,
             )
         }
         return result
