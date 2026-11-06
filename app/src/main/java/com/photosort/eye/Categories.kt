@@ -75,17 +75,23 @@ private val fixedCategories = cleanUp + documents + people
  * Builds the category sections from the analyzed photos. [photos] is the device's library, newest
  * first, so each category's cover is its newest photo; photos deleted since the scan drop out here.
  */
-fun buildSections(photos: List<Media>, tags: Map<Long, Map<String, Float>>): List<CategorySection> {
+fun buildSections(
+    photos: List<Media>,
+    tags: Map<Long, Map<String, Float>>,
+    hidden: Set<String> = emptySet(),
+): List<CategorySection> {
     fun folderFor(category: Category, photosOnly: Boolean = false): Folder? =
-        matchingFolder(photos, tags, category, photosOnly)?.takeIf { it.mediaIds.size >= MIN_CATEGORY_PHOTOS }
+        category.takeIf { it.title !in hidden }
+            ?.let { matchingFolder(photos, tags, it, photosOnly) }
+            ?.takeIf { it.mediaIds.size >= MIN_CATEGORY_PHOTOS }
 
     val scenes = sceneCategories(photos, tags, photosOnly = true) { it !in notScenes }
-        .filter { it.second >= MIN_CATEGORY_PHOTOS }
+        .filter { it.second >= MIN_CATEGORY_PHOTOS && it.first.title !in hidden }
         .take(MAX_SCENES)
         .map { it.first }
 
     return listOf(
-        CategorySection(SECTION_CLEAN_UP, listOfNotNull(similarFolder(photos)) + cleanUp.mapNotNull { folderFor(it) }),
+        CategorySection(SECTION_CLEAN_UP, listOfNotNull(similarFolder(photos).takeIf { SIMILAR_TITLE !in hidden }) + cleanUp.mapNotNull { folderFor(it) }),
         CategorySection("Documents", documents.mapNotNull { folderFor(it) }),
         CategorySection("People", people.mapNotNull { folderFor(it) }),
         CategorySection("In your photos", scenes.mapNotNull { folderFor(it, photosOnly = true) }),
@@ -96,7 +102,12 @@ fun buildSections(photos: List<Media>, tags: Map<Long, Map<String, Float>>): Lis
  * Categories and tags whose name contains [query], biggest first. Unlike [buildSections] this
  * shows small matches too, since the user asked for them by name.
  */
-fun searchTags(photos: List<Media>, tags: Map<Long, Map<String, Float>>, query: String): List<Folder> {
+fun searchTags(
+    photos: List<Media>,
+    tags: Map<Long, Map<String, Float>>,
+    query: String,
+    hidden: Set<String> = emptySet(),
+): List<Folder> {
     val q = query.trim().lowercase()
     if (q.isEmpty()) return emptyList()
     val fixedTags = fixedCategories.flatMap { it.tags }.toSet()
@@ -105,15 +116,46 @@ fun searchTags(photos: List<Media>, tags: Map<Long, Map<String, Float>>, query: 
         .map { it.first }
         .filter { c -> c.title.lowercase().contains(q) || c.tags.any { tagName(it).contains(q) } }
     return (fixed + other)
+        .filter { it.title !in hidden }
         .mapNotNull { matchingFolder(photos, tags, it, photosOnly = false) }
         .sortedByDescending { it.mediaIds.size }
 }
 
 /** The most common tags in the library, for search suggestions. */
-fun popularTags(photos: List<Media>, tags: Map<Long, Map<String, Float>>, limit: Int = 16): List<String> =
+fun popularTags(
+    photos: List<Media>,
+    tags: Map<Long, Map<String, Float>>,
+    hidden: Set<String> = emptySet(),
+    limit: Int = 16,
+): List<String> =
     sceneCategories(photos, tags, photosOnly = false) { it !in notSearchable && it !in sensitive }
+        .filter { it.first.title !in hidden }
         .take(limit)
         .map { it.first.title }
+
+/** A category the user can turn off, with how many photos it holds right now. */
+data class ToggleableCategory(val title: String, val count: Int)
+
+/**
+ * Every category for the manager in settings, grouped like the Categories tab. Unlike
+ * [buildSections] it lists small and empty ones too, so a category can be turned off before it shows up.
+ */
+fun allCategories(photos: List<Media>, tags: Map<Long, Map<String, Float>>): List<Pair<String, List<ToggleableCategory>>> {
+    fun count(category: Category, photosOnly: Boolean = false) =
+        ToggleableCategory(category.title, matchingFolder(photos, tags, category, photosOnly)?.mediaIds?.size ?: 0)
+
+    val similar = ToggleableCategory(SIMILAR_TITLE, similarFolder(photos)?.mediaIds?.size ?: 0)
+    val fixedTags = fixedCategories.flatMap { it.tags }.toSet()
+    // everything searchable that isn't a fixed category, so tags that never become a folder can still be hidden from search
+    val scenes = sceneCategories(photos, tags, photosOnly = false) { it !in fixedTags && it !in notSearchable }
+        .map { (category, n) -> ToggleableCategory(category.title, n) }
+    return listOf(
+        SECTION_CLEAN_UP to listOf(similar) + cleanUp.map { count(it) },
+        "Documents" to documents.map { count(it) },
+        "People" to people.map { count(it) },
+        "Tags" to scenes,
+    )
+}
 
 /**
  * Every photo that is part of a burst (shots seconds apart), library-wide. Needs no analysis, so

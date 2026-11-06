@@ -157,15 +157,15 @@ fun CategoriesScreen(
         val tags = index.snapshot()
         analyzedCount = library.count { it.id in tags }
         withContext(Dispatchers.Default) {
-            sections = buildSections(library, tags)
-            popular = popularTags(library, tags)
+            sections = buildSections(library, tags, prefs.hiddenCategories)
+            popular = popularTags(library, tags, prefs.hiddenCategories)
         }
     }
     LaunchedEffect(photos, version, ui.query) {
         val library = photos ?: return@LaunchedEffect
         if (ui.query.isBlank()) return@LaunchedEffect
         val tags = index.snapshot()
-        results = withContext(Dispatchers.Default) { searchTags(library, tags, ui.query) }
+        results = withContext(Dispatchers.Default) { searchTags(library, tags, ui.query, prefs.hiddenCategories) }
     }
     // photos taken since the last scan get analyzed in the background once the user has opted in
     LaunchedEffect(photos, analyzedCount) {

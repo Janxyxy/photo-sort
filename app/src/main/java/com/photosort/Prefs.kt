@@ -67,6 +67,11 @@ class Prefs(context: Context) {
             ?: SortOrder.NewestFirst
         set(value) = sp.edit { putString(KEY_SORT, value.name) }
 
+    /** Category titles the user turned off; they don't show up as suggestions or in search. */
+    var hiddenCategories: Set<String>
+        get() = sp.getStringSet(KEY_HIDDEN_CATEGORIES, emptySet())!!.toSet()
+        set(value) = sp.edit { putStringSet(KEY_HIDDEN_CATEGORIES, value) }
+
     /** Total bytes moved to the trash through the app. */
     val freedBytes: Long get() = sp.getLong(KEY_FREED, 0)
 
@@ -122,6 +127,7 @@ class Prefs(context: Context) {
         const val KEY_TRASH_ON_LEAVE = "trash_on_leave"
         const val KEY_HAPTICS = "haptics"
         const val KEY_THEME = "theme"
+        const val KEY_HIDDEN_CATEGORIES = "hidden_categories"
     }
 }
 
