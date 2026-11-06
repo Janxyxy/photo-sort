@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.fotosort.ui.CategoriesScreen
+import com.fotosort.ui.CategoriesState
 import com.fotosort.ui.FolderScreen
 import com.fotosort.ui.FotoSortTheme
 import com.fotosort.ui.SettingsScreen
@@ -52,6 +53,7 @@ private fun App(prefs: Prefs) {
     var screen by remember { mutableStateOf<Screen>(Screen.Home) }
     // kept outside Home so coming back from a folder or settings lands on the same tab
     var tab by remember { mutableStateOf(Tab.Folders) }
+    val categories = remember { CategoriesState() }
     when (val current = screen) {
         Screen.Home -> {
             val bottomBar = @Composable { TabBar(tab, onSelect = { tab = it }) }
@@ -59,7 +61,7 @@ private fun App(prefs: Prefs) {
             val settings = { screen = Screen.Settings }
             when (tab) {
                 Tab.Folders -> FolderScreen(prefs, onOpen = open, onSettings = settings, bottomBar = bottomBar)
-                Tab.Categories -> CategoriesScreen(prefs, onOpen = open, onSettings = settings, bottomBar = bottomBar)
+                Tab.Categories -> CategoriesScreen(prefs, categories, onOpen = open, onSettings = settings, bottomBar = bottomBar)
             }
         }
         is Screen.Swipe -> SwipeScreen(prefs, current.folder, onBack = { screen = Screen.Home })

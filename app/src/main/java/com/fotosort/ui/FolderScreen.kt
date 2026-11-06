@@ -226,15 +226,15 @@ private fun FolderGrid(
             }
         }
         items(folders, key = { it.id }) { folder ->
-            FolderItem(folder, keptIds, listLayout, onOpen)
+            FolderItem(folder, folderCountText(folder, keptIds), listLayout, onOpen)
         }
     }
 }
 
-/** Cover, name and "N items · M left"; also used for the categories. */
+/** Cover, name and a line of detail such as "N items · M left"; also used for the categories. */
 @Composable
-fun FolderCard(folder: Folder, keptIds: Set<Long>, onOpen: (Folder) -> Unit) {
-    Column(Modifier.clip(RoundedCornerShape(12.dp)).clickable { onOpen(folder) }) {
+fun FolderCard(folder: Folder, subtitle: String, onOpen: (Folder) -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier.clip(RoundedCornerShape(12.dp)).clickable { onOpen(folder) }) {
         AsyncImage(
             model = folder.coverUri,
             contentDescription = null,
@@ -249,7 +249,9 @@ fun FolderCard(folder: Folder, keptIds: Set<Long>, onOpen: (Folder) -> Unit) {
             modifier = Modifier.padding(top = 6.dp, start = 4.dp, end = 4.dp),
         )
         Text(
-            folderCountText(folder, keptIds),
+            subtitle,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 4.dp),

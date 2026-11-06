@@ -93,6 +93,7 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
     var keptThisSession by remember { mutableIntStateOf(0) }
     var leaving by remember { mutableStateOf(false) }
     var showReview by remember { mutableStateOf(false) }
+    var bulk by remember { mutableStateOf(false) }
     var similarGroup by remember { mutableStateOf<List<Media>?>(null) }
     var playing by remember { mutableStateOf<Media?>(null) }
     val history = remember { mutableStateListOf<Step>() }
@@ -156,7 +157,7 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
             trash()
         }
     }
-    BackHandler(enabled = !showReview) { leave() }
+    BackHandler(enabled = !showReview && !bulk) { leave() }
 
     fun record(decisions: List<Pair<Media, Boolean>>, nextIndex: Int, message: String) {
         history += Step(
@@ -199,6 +200,26 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
         return
     }
 
+    if (bulk) {
+        val remaining = items.drop(index)
+        BulkSelectScreen(
+            items = remaining,
+            // categories are mostly clutter (screenshots, blurry...), so start with everything selected
+            preselectAll = folder.virtual,
+            onClose = { bulk = false },
+            onApply = { trashIds ->
+                bulk = false
+                val trashCount = remaining.count { it.id in trashIds }
+                record(
+                    remaining.map { it to (it.id !in trashIds) },
+                    items.size,
+                    "Kept ${remaining.size - trashCount}, marked $trashCount for trash",
+                )
+            },
+        )
+        return
+    }
+
     Scaffold(
         containerColor = Color.Black,
         topBar = {
@@ -223,6 +244,11 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
                         }
                     },
                     actions = {
+                        if (items.size - index > 1) {
+                            IconButton(onClick = { bulk = true }) {
+                                Icon(GridIcon, contentDescription = "Select several")
+                            }
+                        }
                         if (history.isNotEmpty()) {
                             TextButton(onClick = ::undo) { Text("Undo") }
                         }

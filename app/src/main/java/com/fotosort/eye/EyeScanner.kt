@@ -48,16 +48,30 @@ class EyeScanner(private val context: Context, private val index: EyeIndex) {
     private val _state = MutableStateFlow<ScanState>(ScanState.Idle)
     val state: StateFlow<ScanState> = _state.asStateFlow()
 
+    /** Set by [stop] so [autoStart] doesn't undo a pause. */
+    private var pausedByUser = false
+
     fun start() {
+        pausedByUser = false
         if (job?.isActive == true) return
-        job = scope.launch { scan() }
+        job = scope.launch { scan(auto = false) }
+    }
+
+    /**
+     * Analyzes photos added since the last scan, without asking. Does nothing if the user paused,
+     * and never downloads the model on its own (it lives in the cache, which Android may clear).
+     */
+    fun autoStart() {
+        if (pausedByUser || job?.isActive == true) return
+        job = scope.launch { scan(auto = true) }
     }
 
     fun stop() {
+        pausedByUser = true
         job?.cancel()
     }
 
-    private suspend fun scan() {
+    private suspend fun scan(auto: Boolean) {
         try {
             val all = MediaRepository.loadAllImages(context)
             val analyzed = index.snapshot().keys
@@ -69,6 +83,7 @@ class EyeScanner(private val context: Context, private val index: EyeIndex) {
             val alreadyDone = all.size - todo.size
             Eye(context).use { eye ->
                 if (!eye.isDownloaded()) {
+                    if (auto) return
                     _state.value = ScanState.Downloading
                     eye.download()
                 }

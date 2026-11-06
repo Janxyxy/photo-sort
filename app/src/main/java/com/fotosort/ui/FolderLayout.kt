@@ -51,14 +51,14 @@ fun LayoutToggleButton(listLayout: Boolean, onToggle: () -> Unit) {
 
 /** A folder as a tile or a row, depending on the layout. */
 @Composable
-fun FolderItem(folder: Folder, keptIds: Set<Long>, listLayout: Boolean, onOpen: (Folder) -> Unit) {
-    if (listLayout) FolderRow(folder, keptIds, onOpen) else FolderCard(folder, keptIds, onOpen)
+fun FolderItem(folder: Folder, subtitle: String, listLayout: Boolean, onOpen: (Folder) -> Unit) {
+    if (listLayout) FolderRow(folder, subtitle, onOpen) else FolderCard(folder, subtitle, onOpen)
 }
 
 @Composable
-private fun FolderRow(folder: Folder, keptIds: Set<Long>, onOpen: (Folder) -> Unit) {
+fun FolderRow(folder: Folder, subtitle: String, onOpen: (Folder) -> Unit, modifier: Modifier = Modifier) {
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onOpen(folder) }.padding(4.dp),
+        modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onOpen(folder) }.padding(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AsyncImage(
@@ -76,7 +76,7 @@ private fun FolderRow(folder: Folder, keptIds: Set<Long>, onOpen: (Folder) -> Un
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                folderCountText(folder, keptIds),
+                subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -92,7 +92,7 @@ fun folderCountText(folder: Folder, keptIds: Set<Long>): String {
 }
 
 /** Four squares; icons-core has no grid icon. */
-private val GridIcon: ImageVector by lazy {
+val GridIcon: ImageVector by lazy {
     ImageVector.Builder("Grid", 24.dp, 24.dp, 24f, 24f).apply {
         path(fill = SolidColor(Color.Black)) {
             for ((x, y) in listOf(3f to 3f, 13f to 3f, 3f to 13f, 13f to 13f)) {
