@@ -11,6 +11,8 @@ A swipe-to-clean photo app for Android. Open a folder and go through it one phot
 - **right** to delete
 - **up / down** to skip ahead or go back without deciding
 
+Prefer right to keep? Flip it in Settings.
+
 Nothing is deleted straight away. Photos you swipe right are marked, and when you're done you
 move them to the Android trash in one go, where they stay restorable for 30 days. Photos you
 keep are remembered and skipped next time (you can turn that off).
@@ -28,6 +30,7 @@ keep are remembered and skipped next time (you can turn that off).
 - Each card shows the date, file size and video length. Settings shows how much space you've
   freed so far.
 - Folders and categories can be shown as a grid or a list.
+- Light, dark or system theme. The swipe screen stays dark so photos stand out.
 
 ## Categories
 

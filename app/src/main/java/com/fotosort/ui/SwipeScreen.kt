@@ -100,6 +100,8 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val groupSimilar = remember { prefs.groupSimilar }
+    val rightKeeps = remember { prefs.swipeRightToKeep }
+    val haptics = remember { prefs.haptics }
     val similar by remember { derivedStateOf { if (groupSimilar) similarGroups(items) else emptyMap() } }
 
     LaunchedEffect(folder.id) {
@@ -148,9 +150,9 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
         if (leaving) onBack()
     }
 
-    // Leaving the folder asks to empty the pending batch; cancelled items stay marked for later.
+    // Leaving the folder asks to empty the pending batch (if enabled); cancelled items stay marked for later.
     fun leave() {
-        if (prefs.pendingIds.isEmpty()) {
+        if (prefs.pendingIds.isEmpty() || !prefs.trashOnLeave) {
             onBack()
         } else {
             leaving = true
@@ -220,122 +222,127 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
         return
     }
 
-    Scaffold(
-        containerColor = Color.Black,
-        topBar = {
-            Column {
-                TopAppBar(
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black),
-                    navigationIcon = {
-                        IconButton(onClick = ::leave) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    title = {
-                        Column {
-                            Text(folder.name, style = MaterialTheme.typography.titleMedium)
-                            if (items.isNotEmpty()) {
-                                Text(
-                                    "${minOf(index + 1, items.size)} / ${items.size}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+    // photos read best on black, so this screen stays dark whatever the app theme is
+    FotoSortTheme(dark = true) {
+        Scaffold(
+            containerColor = Color.Black,
+            topBar = {
+                Column {
+                    TopAppBar(
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black),
+                        navigationIcon = {
+                            IconButton(onClick = ::leave) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                             }
-                        }
-                    },
-                    actions = {
-                        if (items.size - index > 1) {
-                            IconButton(onClick = { bulk = true }) {
-                                Icon(GridIcon, contentDescription = "Select several")
+                        },
+                        title = {
+                            Column {
+                                Text(folder.name, style = MaterialTheme.typography.titleMedium)
+                                if (items.isNotEmpty()) {
+                                    Text(
+                                        "${minOf(index + 1, items.size)} / ${items.size}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
-                        }
-                        if (history.isNotEmpty()) {
-                            TextButton(onClick = ::undo) { Text("Undo") }
-                        }
-                        if (marked.isNotEmpty()) {
-                            TextButton(
-                                onClick = { showReview = true },
-                                colors = ButtonDefaults.textButtonColors(contentColor = TrashColor),
-                            ) {
-                                Icon(Icons.Filled.Delete, contentDescription = "Review items marked for trash")
-                                Text("${marked.size}", Modifier.padding(start = 4.dp))
+                        },
+                        actions = {
+                            if (items.size - index > 1) {
+                                IconButton(onClick = { bulk = true }) {
+                                    Icon(GridIcon, contentDescription = "Select several")
+                                }
                             }
-                        }
-                    },
-                )
-                if (items.isNotEmpty()) {
-                    LinearProgressIndicator(
-                        progress = { index.toFloat() / items.size },
-                        modifier = Modifier.fillMaxWidth(),
+                            if (history.isNotEmpty()) {
+                                TextButton(onClick = ::undo) { Text("Undo") }
+                            }
+                            if (marked.isNotEmpty()) {
+                                TextButton(
+                                    onClick = { showReview = true },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = TrashColor),
+                                ) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Review items marked for trash")
+                                    Text("${marked.size}", Modifier.padding(start = 4.dp))
+                                }
+                            }
+                        },
                     )
+                    if (items.isNotEmpty()) {
+                        LinearProgressIndicator(
+                            progress = { index.toFloat() / items.size },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
-            }
-        },
-    ) { padding ->
-        Box(Modifier.padding(padding).fillMaxSize()) {
-            when {
-                !loaded -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                items.isEmpty() -> Text(
-                    "Nothing left to sort here",
-                    Modifier.align(Alignment.Center),
-                    color = Color.White,
-                )
-                index >= items.size -> {
-                    val markedHere = items.filter { it.id in marked }
-                    DoneState(
-                        kept = keptThisSession,
-                        markedCount = markedHere.size,
-                        markedBytes = markedHere.sumOf { it.size },
-                        onReview = { showReview = true },
-                        onTrash = trash,
-                        onLast = { index = items.size - 1 },
-                        onBack = ::leave,
-                    )
-                }
-                else -> Column(Modifier.fillMaxSize()) {
-                    val current = items[index]
-                    val group = similar[current.id]
-                    SwipeDeck(
-                        current = current,
-                        next = items.getOrNull(index + 1),
-                        previous = items.getOrNull(index - 1),
-                        isMarked = current.id in marked,
-                        similarCount = group?.size ?: 0,
-                        modifier = Modifier.weight(1f),
-                        onKeep = { decide(keep = true) },
-                        onTrash = { decide(keep = false) },
-                        onNext = { index++ },
-                        onPrevious = { if (index > 0) index-- },
-                        onOpenSimilar = { similarGroup = group },
-                        onPlay = { playing = current },
-                    )
-                    DecisionBar(onKeep = { decide(keep = true) }, onTrash = { decide(keep = false) })
-                }
-            }
-            // at the top so it doesn't cover the Keep / Delete buttons
-            SnackbarHost(snackbar, Modifier.align(Alignment.TopCenter))
-        }
-    }
-
-    similarGroup?.let { group ->
-        SimilarSheet(
-            group = group,
-            onDismiss = { similarGroup = null },
-            onApply = { keepIds ->
-                val ids = group.mapTo(HashSet()) { it.id }
-                var next = index
-                while (next < items.size && items[next].id in ids) next++
-                val trashCount = group.size - keepIds.size
-                record(
-                    group.map { it to (it.id in keepIds) },
-                    next,
-                    "Kept ${keepIds.size}, marked $trashCount for trash",
-                )
-                similarGroup = null
             },
-        )
+        ) { padding ->
+            Box(Modifier.padding(padding).fillMaxSize()) {
+                when {
+                    !loaded -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    items.isEmpty() -> Text(
+                        "Nothing left to sort here",
+                        Modifier.align(Alignment.Center),
+                        color = Color.White,
+                    )
+                    index >= items.size -> {
+                        val markedHere = items.filter { it.id in marked }
+                        DoneState(
+                            kept = keptThisSession,
+                            markedCount = markedHere.size,
+                            markedBytes = markedHere.sumOf { it.size },
+                            onReview = { showReview = true },
+                            onTrash = trash,
+                            onLast = { index = items.size - 1 },
+                            onBack = ::leave,
+                        )
+                    }
+                    else -> Column(Modifier.fillMaxSize()) {
+                        val current = items[index]
+                        val group = similar[current.id]
+                        SwipeDeck(
+                            current = current,
+                            next = items.getOrNull(index + 1),
+                            previous = items.getOrNull(index - 1),
+                            isMarked = current.id in marked,
+                            similarCount = group?.size ?: 0,
+                            rightKeeps = rightKeeps,
+                            haptics = haptics,
+                            modifier = Modifier.weight(1f),
+                            onKeep = { decide(keep = true) },
+                            onTrash = { decide(keep = false) },
+                            onNext = { index++ },
+                            onPrevious = { if (index > 0) index-- },
+                            onOpenSimilar = { similarGroup = group },
+                            onPlay = { playing = current },
+                        )
+                        DecisionBar(rightKeeps, onKeep = { decide(keep = true) }, onTrash = { decide(keep = false) })
+                    }
+                }
+                // at the top so it doesn't cover the Keep / Delete buttons
+                SnackbarHost(snackbar, Modifier.align(Alignment.TopCenter))
+            }
+        }
+
+        similarGroup?.let { group ->
+            SimilarSheet(
+                group = group,
+                onDismiss = { similarGroup = null },
+                onApply = { keepIds ->
+                    val ids = group.mapTo(HashSet()) { it.id }
+                    var next = index
+                    while (next < items.size && items[next].id in ids) next++
+                    val trashCount = group.size - keepIds.size
+                    record(
+                        group.map { it to (it.id in keepIds) },
+                        next,
+                        "Kept ${keepIds.size}, marked $trashCount for trash",
+                    )
+                    similarGroup = null
+                },
+            )
+        }
+        playing?.let { VideoPlayerDialog(it, onDismiss = { playing = null }) }
     }
-    playing?.let { VideoPlayerDialog(it, onDismiss = { playing = null }) }
 }
 
 private const val MAX_UNDO = 50
@@ -364,7 +371,7 @@ private fun View.thresholdHaptic() {
 }
 
 /**
- * Left = keep, right = trash, up = next, down = previous. Pinch or double-tap zooms; while zoomed,
+ * Left = keep, right = trash (mirrored when [rightKeeps]), up = next, down = previous. Pinch or double-tap zooms; while zoomed,
  * dragging pans instead of swiping. The neighbouring item is drawn underneath so it is already
  * loaded when the top card leaves.
  */
@@ -375,6 +382,8 @@ private fun SwipeDeck(
     previous: Media?,
     isMarked: Boolean,
     similarCount: Int,
+    rightKeeps: Boolean,
+    haptics: Boolean,
     modifier: Modifier,
     onKeep: () -> Unit,
     onTrash: () -> Unit,
@@ -408,11 +417,11 @@ private fun SwipeDeck(
             when {
                 mode == DragMode.Horizontal && offsetX.value < -thresholdX -> {
                     offsetX.animateTo(-width * 1.5f)
-                    onKeep()
+                    if (rightKeeps) onTrash() else onKeep()
                 }
                 mode == DragMode.Horizontal && offsetX.value > thresholdX -> {
                     offsetX.animateTo(width * 1.5f)
-                    onTrash()
+                    if (rightKeeps) onKeep() else onTrash()
                 }
                 mode == DragMode.Vertical && offsetY.value < -thresholdY -> {
                     offsetY.animateTo(-height)
@@ -486,7 +495,7 @@ private fun SwipeDeck(
                             var pastThreshold = false
 
                             fun updateThreshold(past: Boolean) {
-                                if (past && !pastThreshold) view.thresholdHaptic()
+                                if (haptics && past && !pastThreshold) view.thresholdHaptic()
                                 pastThreshold = past
                             }
 
@@ -568,19 +577,25 @@ private fun SwipeDeck(
                     )
                 }
                 if (current.isVideo) PlayBadge(Modifier.align(Alignment.Center))
+                // each label sits on the side the card moves away from
+                val keepSign = if (rightKeeps) 1f else -1f
                 SwipeLabel(
                     "KEEP",
                     KeepColor,
-                    Modifier.align(Alignment.TopEnd).graphicsLayer { alpha = (-offsetX.value / thresholdX).coerceIn(0f, 1f) },
+                    Modifier
+                        .align(if (rightKeeps) Alignment.TopStart else Alignment.TopEnd)
+                        .graphicsLayer { alpha = (keepSign * offsetX.value / thresholdX).coerceIn(0f, 1f) },
                 )
                 SwipeLabel(
                     "DELETE",
                     TrashColor,
-                    Modifier.align(Alignment.TopStart).graphicsLayer { alpha = (offsetX.value / thresholdX).coerceIn(0f, 1f) },
+                    Modifier
+                        .align(if (rightKeeps) Alignment.TopEnd else Alignment.TopStart)
+                        .graphicsLayer { alpha = (-keepSign * offsetX.value / thresholdX).coerceIn(0f, 1f) },
                 )
                 if (isMarked) {
                     Pill(
-                        "Marked for trash · swipe left to keep",
+                        "Marked for trash · swipe ${if (rightKeeps) "right" else "left"} to keep",
                         TrashColor,
                         Modifier.align(Alignment.TopCenter).padding(top = 12.dp),
                     )
@@ -672,28 +687,44 @@ private fun SwipeLabel(text: String, color: Color, modifier: Modifier) {
 }
 
 @Composable
-private fun DecisionBar(onKeep: () -> Unit, onTrash: () -> Unit) {
+private fun DecisionBar(rightKeeps: Boolean, onKeep: () -> Unit, onTrash: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        // each button sits on the side of its swipe direction
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(
-                onClick = onKeep,
-                colors = ButtonDefaults.buttonColors(containerColor = KeepColor, contentColor = Color.White),
-                modifier = Modifier.weight(1f),
-            ) {
-                Icon(Icons.Filled.Check, contentDescription = null)
-                Text("Keep", Modifier.padding(start = 8.dp))
+            val keep = @Composable {
+                Button(
+                    onClick = onKeep,
+                    colors = ButtonDefaults.buttonColors(containerColor = KeepColor, contentColor = Color.White),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Filled.Check, contentDescription = null)
+                    Text("Keep", Modifier.padding(start = 8.dp))
+                }
             }
-            Button(
-                onClick = onTrash,
-                colors = ButtonDefaults.buttonColors(containerColor = TrashColor, contentColor = Color.White),
-                modifier = Modifier.weight(1f),
-            ) {
-                Icon(Icons.Filled.Delete, contentDescription = null)
-                Text("Delete", Modifier.padding(start = 8.dp))
+            val delete = @Composable {
+                Button(
+                    onClick = onTrash,
+                    colors = ButtonDefaults.buttonColors(containerColor = TrashColor, contentColor = Color.White),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Filled.Delete, contentDescription = null)
+                    Text("Delete", Modifier.padding(start = 8.dp))
+                }
+            }
+            if (rightKeeps) {
+                delete()
+                keep()
+            } else {
+                keep()
+                delete()
             }
         }
         Text(
-            "← keep · delete →   ·   swipe up/down to browse",
+            if (rightKeeps) {
+                "← delete · keep →   ·   swipe up/down to browse"
+            } else {
+                "← keep · delete →   ·   swipe up/down to browse"
+            },
             style = MaterialTheme.typography.bodySmall,
             color = Color.Gray,
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp),

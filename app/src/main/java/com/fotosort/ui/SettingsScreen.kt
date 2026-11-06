@@ -34,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import com.fotosort.Prefs
 import com.fotosort.SortOrder
+import com.fotosort.ThemeMode
 import com.fotosort.app
 import kotlinx.coroutines.launch
 
@@ -46,6 +47,9 @@ fun SettingsScreen(prefs: Prefs, onBack: () -> Unit) {
     var includeVideos by remember { mutableStateOf(prefs.includeVideos) }
     var groupSimilar by remember { mutableStateOf(prefs.groupSimilar) }
     var sortOrder by remember { mutableStateOf(prefs.sortOrder) }
+    var rightKeeps by remember { mutableStateOf(prefs.swipeRightToKeep) }
+    var trashOnLeave by remember { mutableStateOf(prefs.trashOnLeave) }
+    var haptics by remember { mutableStateOf(prefs.haptics) }
     var keptCount by remember { mutableIntStateOf(prefs.keptIds.size) }
     var confirmClear by remember { mutableStateOf(false) }
     var confirmClearAnalysis by remember { mutableStateOf(false) }
@@ -66,9 +70,28 @@ fun SettingsScreen(prefs: Prefs, onBack: () -> Unit) {
         },
     ) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState())) {
+            SectionTitle("Swiping")
+            SwitchItem(
+                title = "Swipe right to keep",
+                summary = if (rightKeeps) "Right keeps, left deletes" else "Left keeps, right deletes",
+                checked = rightKeeps,
+                onChange = {
+                    rightKeeps = it
+                    prefs.swipeRightToKeep = it
+                },
+            )
+            SwitchItem(
+                title = "Vibrate on swipe",
+                summary = "A short buzz when a swipe goes far enough to count",
+                checked = haptics,
+                onChange = {
+                    haptics = it
+                    prefs.haptics = it
+                },
+            )
             SwitchItem(
                 title = "Skip photos I already kept",
-                summary = "Photos you swiped left are hidden the next time you open the folder",
+                summary = "Photos you kept are hidden the next time you open the folder",
                 checked = skipKept,
                 onChange = {
                     skipKept = it
@@ -93,23 +116,44 @@ fun SettingsScreen(prefs: Prefs, onBack: () -> Unit) {
                     prefs.groupSimilar = it
                 },
             )
+
             HorizontalDivider()
             SectionTitle("Order")
             SortOrder.entries.forEach { order ->
-                ListItem(
-                    headlineContent = { Text(order.label) },
-                    leadingContent = { RadioButton(selected = order == sortOrder, onClick = null) },
-                    modifier = Modifier.clickable {
-                        sortOrder = order
-                        prefs.sortOrder = order
-                    },
-                )
+                RadioItem(order.label, selected = order == sortOrder) {
+                    sortOrder = order
+                    prefs.sortOrder = order
+                }
             }
+
             HorizontalDivider()
+            SectionTitle("Trash")
+            SwitchItem(
+                title = "Move to trash when leaving a folder",
+                summary = if (trashOnLeave) {
+                    "Asks to move marked items to the trash as you go back"
+                } else {
+                    "Marked items wait until you move them from the folder list"
+                },
+                checked = trashOnLeave,
+                onChange = {
+                    trashOnLeave = it
+                    prefs.trashOnLeave = it
+                },
+            )
             ListItem(
                 headlineContent = { Text("Space freed") },
                 supportingContent = { Text("${formatSize(context, prefs.freedBytes)} moved to the trash so far") },
             )
+
+            HorizontalDivider()
+            SectionTitle("Appearance")
+            ThemeMode.entries.forEach { mode ->
+                RadioItem(mode.label, selected = mode == prefs.theme) { prefs.theme = mode }
+            }
+
+            HorizontalDivider()
+            SectionTitle("Stored data")
             ListItem(
                 headlineContent = { Text("Clear kept history") },
                 supportingContent = { Text("$keptCount items remembered as kept") },
@@ -120,11 +164,12 @@ fun SettingsScreen(prefs: Prefs, onBack: () -> Unit) {
                 supportingContent = { Text("$analyzedCount photos analyzed for categories") },
                 modifier = Modifier.clickable(enabled = analyzedCount > 0) { confirmClearAnalysis = true },
             )
+
             HorizontalDivider()
             Text(
-                "Swipe left to keep, right to delete, up and down to browse without deciding. " +
-                    "Pinch or double-tap to zoom. Deleted items go to the system trash, where Android " +
-                    "keeps them for 30 days.",
+                "Swipe ${if (rightKeeps) "right" else "left"} to keep, ${if (rightKeeps) "left" else "right"} to delete, " +
+                    "up and down to browse without deciding. Pinch or double-tap to zoom. Deleted items go to " +
+                    "the system trash, where Android keeps them for 30 days.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),
@@ -177,6 +222,15 @@ private fun SwitchItem(title: String, summary: String, checked: Boolean, onChang
         supportingContent = { Text(summary) },
         trailingContent = { Switch(checked = checked, onCheckedChange = onChange) },
         modifier = Modifier.clickable { onChange(!checked) },
+    )
+}
+
+@Composable
+private fun RadioItem(label: String, selected: Boolean, onSelect: () -> Unit) {
+    ListItem(
+        headlineContent = { Text(label) },
+        leadingContent = { RadioButton(selected = selected, onClick = null) },
+        modifier = Modifier.clickable(onClick = onSelect),
     )
 }
 

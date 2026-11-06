@@ -2,6 +2,7 @@ package com.fotosort
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material.icons.Icons
@@ -12,10 +13,13 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.fotosort.ui.CategoriesScreen
 import com.fotosort.ui.CategoriesState
@@ -23,6 +27,7 @@ import com.fotosort.ui.FolderScreen
 import com.fotosort.ui.FotoSortTheme
 import com.fotosort.ui.SettingsScreen
 import com.fotosort.ui.SwipeScreen
+import com.fotosort.ui.isDark
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,7 +35,18 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val prefs = Prefs(applicationContext)
         setContent {
-            FotoSortTheme {
+            val dark = prefs.theme.isDark()
+            // status and navigation bar icons follow the app theme, not only the system one
+            LaunchedEffect(dark) {
+                val transparent = Color.Transparent.toArgb()
+                val style = if (dark) {
+                    SystemBarStyle.dark(transparent)
+                } else {
+                    SystemBarStyle.light(transparent, transparent)
+                }
+                enableEdgeToEdge(style, style)
+            }
+            FotoSortTheme(dark) {
                 App(prefs)
             }
         }

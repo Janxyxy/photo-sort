@@ -1,6 +1,9 @@
 package com.fotosort
 
 import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 
 /**
@@ -29,6 +32,34 @@ class Prefs(context: Context) {
     var listLayout: Boolean
         get() = sp.getBoolean(KEY_LIST_LAYOUT, false)
         set(value) = sp.edit { putBoolean(KEY_LIST_LAYOUT, value) }
+
+    /** Swipe right to keep and left to delete, instead of the default left = keep. */
+    var swipeRightToKeep: Boolean
+        get() = sp.getBoolean(KEY_SWIPE_RIGHT_KEEP, false)
+        set(value) = sp.edit { putBoolean(KEY_SWIPE_RIGHT_KEEP, value) }
+
+    /** Leaving a folder with items marked for trash asks to move them right away. */
+    var trashOnLeave: Boolean
+        get() = sp.getBoolean(KEY_TRASH_ON_LEAVE, true)
+        set(value) = sp.edit { putBoolean(KEY_TRASH_ON_LEAVE, value) }
+
+    var haptics: Boolean
+        get() = sp.getBoolean(KEY_HAPTICS, true)
+        set(value) = sp.edit { putBoolean(KEY_HAPTICS, value) }
+
+    private var themeState by mutableStateOf(
+        sp.getString(KEY_THEME, null)
+            ?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } }
+            ?: ThemeMode.Dark,
+    )
+
+    /** Observable so the whole app recomposes when it changes. */
+    var theme: ThemeMode
+        get() = themeState
+        set(value) {
+            themeState = value
+            sp.edit { putString(KEY_THEME, value.name) }
+        }
 
     var sortOrder: SortOrder
         get() = sp.getString(KEY_SORT, null)
@@ -87,5 +118,15 @@ class Prefs(context: Context) {
         const val KEY_SORT = "sort_order"
         const val KEY_LIST_LAYOUT = "list_layout"
         const val KEY_FREED = "freed_bytes"
+        const val KEY_SWIPE_RIGHT_KEEP = "swipe_right_keep"
+        const val KEY_TRASH_ON_LEAVE = "trash_on_leave"
+        const val KEY_HAPTICS = "haptics"
+        const val KEY_THEME = "theme"
     }
+}
+
+enum class ThemeMode(val label: String) {
+    System("Follow system"),
+    Light("Light"),
+    Dark("Dark"),
 }
