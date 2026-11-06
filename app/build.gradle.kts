@@ -20,6 +20,8 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            // sideloaded builds: sign with the local debug key so release installs over debug and back
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

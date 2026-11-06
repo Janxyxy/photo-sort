@@ -160,20 +160,19 @@ fun CategoriesScreen(
 
     // read once per visit; returning from a category recreates this screen
     val decided = remember { prefs.keptIds + prefs.pendingIds }
-    val sizeById = remember(photos) { photos.orEmpty().associate { it.id to it.size } }
-    fun tileFor(folder: Folder): Tile {
-        val left = folder.mediaIds.filter { it !in decided }
-        return Tile(folder, left.size, left.sumOf { sizeById[it] ?: 0L })
+    var sizeById by remember { mutableStateOf<Map<Long, Long>>(emptyMap()) }
+    var tileSections by remember { mutableStateOf<List<TileSection>>(emptyList()) }
+    var resultTiles by remember { mutableStateOf<List<Tile>>(emptyList()) }
+    // off the main thread: these walk every photo id of every category
+    LaunchedEffect(photos) {
+        val library = photos ?: return@LaunchedEffect
+        sizeById = withContext(Dispatchers.Default) { library.associate { it.id to it.size } }
     }
-    val tileSections = remember(sections, sizeById) {
-        val all = sections.map { section -> section.title to section.folders.map(::tileFor) }
-        val active = all.map { (title, tiles) ->
-            val open = tiles.filter { it.left > 0 }
-            // biggest savings first; other sections keep their meaningful order
-            TileSection(title, if (title == SECTION_CLEAN_UP) open.sortedByDescending { it.leftBytes } else open)
-        }
-        val done = all.flatMap { (_, tiles) -> tiles.filter { it.left == 0 } }
-        (active + TileSection(SECTION_DONE, done)).filter { it.tiles.isNotEmpty() }
+    LaunchedEffect(sections, sizeById) {
+        tileSections = withContext(Dispatchers.Default) { buildTileSections(sections, decided, sizeById) }
+    }
+    LaunchedEffect(results, sizeById) {
+        resultTiles = withContext(Dispatchers.Default) { results.map { tileFor(it, decided, sizeById) } }
     }
     val openSection = tileSections.firstOrNull { it.title == ui.section }
 
@@ -233,7 +232,7 @@ fun CategoriesScreen(
                     }
                     when {
                         ui.query.isNotBlank() -> TileGrid(
-                            tiles = results.map(::tileFor),
+                            tiles = resultTiles,
                             listLayout = listLayout,
                             emptyText = "No photos tagged “${ui.query.trim()}”",
                             onOpen = onOpen,
@@ -264,6 +263,32 @@ fun CategoriesScreen(
             }
         }
     }
+}
+
+private fun tileFor(folder: Folder, decided: Set<Long>, sizeById: Map<Long, Long>): Tile {
+    var left = 0
+    var bytes = 0L
+    for (id in folder.mediaIds) {
+        if (id in decided) continue
+        left++
+        bytes += sizeById[id] ?: 0L
+    }
+    return Tile(folder, left, bytes)
+}
+
+/** Open categories per section (Clean up biggest first), then everything finished in one Done section. */
+private fun buildTileSections(
+    sections: List<CategorySection>,
+    decided: Set<Long>,
+    sizeById: Map<Long, Long>,
+): List<TileSection> {
+    val all = sections.map { section -> section.title to section.folders.map { tileFor(it, decided, sizeById) } }
+    val active = all.map { (title, tiles) ->
+        val open = tiles.filter { it.left > 0 }
+        TileSection(title, if (title == SECTION_CLEAN_UP) open.sortedByDescending { it.leftBytes } else open)
+    }
+    val done = all.flatMap { (_, tiles) -> tiles.filter { it.left == 0 } }
+    return (active + TileSection(SECTION_DONE, done)).filter { it.tiles.isNotEmpty() }
 }
 
 /** Each section as a header and a horizontal row of tiles (grid) or its first few rows (list). */

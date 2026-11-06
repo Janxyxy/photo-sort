@@ -9,11 +9,12 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Process
 import android.os.SystemClock
 import com.fotosort.MediaRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.ensureActive
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
+import java.util.concurrent.Executors
 import kotlin.coroutines.coroutineContext
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -42,7 +44,17 @@ sealed interface ScanState {
  * while the user switches tabs or sorts photos; [stop] pauses it and [start] picks up where it left off.
  */
 class EyeScanner(private val context: Context, private val index: EyeIndex) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /**
+     * One low-priority thread, so analysis yields to the UI instead of competing with it on the
+     * shared Default pool. Threads Eye starts natively inherit the lower priority.
+     */
+    private val dispatcher = Executors.newSingleThreadExecutor { task ->
+        Thread({
+            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
+            task.run()
+        }, "eye-scan")
+    }.asCoroutineDispatcher()
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private var job: Job? = null
 
     private val _state = MutableStateFlow<ScanState>(ScanState.Idle)
@@ -88,12 +100,16 @@ class EyeScanner(private val context: Context, private val index: EyeIndex) {
                     eye.download()
                 }
                 val started = SystemClock.elapsedRealtime()
+                var lastNotify = started
                 todo.forEachIndexed { i, media ->
                     coroutineContext.ensureActive()
                     val msPerPhoto = if (i > 0) (SystemClock.elapsedRealtime() - started) / i else null
                     _state.value = ScanState.Scanning(alreadyDone + i, all.size, msPerPhoto)
-                    // refresh the categories every so often, not on every photo
-                    index.add(media.id, analyze(eye, media.uri), notify = i % NOTIFY_EVERY == NOTIFY_EVERY - 1)
+                    // rebuilding the categories is not free, so refresh them every few seconds, not per photo
+                    val now = SystemClock.elapsedRealtime()
+                    val notify = now - lastNotify >= NOTIFY_INTERVAL_MS
+                    if (notify) lastNotify = now
+                    index.add(media.id, analyze(eye, media.uri), notify)
                 }
             }
             index.notifyChanged()
@@ -146,7 +162,7 @@ class EyeScanner(private val context: Context, private val index: EyeIndex) {
     private companion object {
         /** Eye works from a 384px crop and a 768px face pass, so more pixels only slow decoding down. */
         const val MAX_SIDE = 1024
-        const val NOTIFY_EVERY = 25
+        const val NOTIFY_INTERVAL_MS = 5_000L
 
         // Layout (boxes and crops) isn't used for categories; faces and sharpness feed eyes_closed and blurry.
         val OPTIONS = Options(parts = setOf(Part.PHOTO, Part.FACES, Part.SHARPNESS))

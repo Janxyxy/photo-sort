@@ -226,7 +226,9 @@ private fun FolderGrid(
             }
         }
         items(folders, key = { it.id }) { folder ->
-            FolderItem(folder, folderCountText(folder, keptIds), listLayout, onOpen)
+            // counting a big folder's kept items on every scroll bind adds up
+            val subtitle = remember(folder, keptIds) { folderCountText(folder, keptIds) }
+            FolderItem(folder, subtitle, listLayout, onOpen)
         }
     }
 }
