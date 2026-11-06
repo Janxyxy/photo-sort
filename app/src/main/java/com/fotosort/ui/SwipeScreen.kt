@@ -223,7 +223,7 @@ fun SwipeScreen(prefs: Prefs, folder: Folder, onBack: () -> Unit) {
     }
 
     // photos read best on black, so this screen stays dark whatever the app theme is
-    FotoSortTheme(dark = true) {
+    PhotoSortTheme(dark = true) {
         Scaffold(
             containerColor = Color.Black,
             topBar = {

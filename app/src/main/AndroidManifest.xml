@@ -10,11 +10,11 @@
         android:maxSdkVersion="32" />
 
     <application
-        android:name=".FotoSortApp"
+        android:name=".PhotoSortApp"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.FotoSort">
+        android:theme="@style/Theme.PhotoSort">
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density"

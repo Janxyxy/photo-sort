@@ -24,7 +24,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.fotosort.ui.CategoriesScreen
 import com.fotosort.ui.CategoriesState
 import com.fotosort.ui.FolderScreen
-import com.fotosort.ui.FotoSortTheme
+import com.fotosort.ui.PhotoSortTheme
 import com.fotosort.ui.SettingsScreen
 import com.fotosort.ui.SwipeScreen
 import com.fotosort.ui.isDark
@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
                 }
                 enableEdgeToEdge(style, style)
             }
-            FotoSortTheme(dark) {
+            PhotoSortTheme(dark) {
                 App(prefs)
             }
         }

@@ -8,7 +8,7 @@ import coil.decode.VideoFrameDecoder
 import com.fotosort.eye.EyeIndex
 import com.fotosort.eye.EyeScanner
 
-class FotoSortApp : Application(), ImageLoaderFactory {
+class PhotoSortApp : Application(), ImageLoaderFactory {
     val eyeIndex by lazy { EyeIndex(this) }
     val eyeScanner by lazy { EyeScanner(this, eyeIndex) }
 
@@ -19,4 +19,4 @@ class FotoSortApp : Application(), ImageLoaderFactory {
             .build()
 }
 
-val Context.app: FotoSortApp get() = applicationContext as FotoSortApp
+val Context.app: PhotoSortApp get() = applicationContext as PhotoSortApp

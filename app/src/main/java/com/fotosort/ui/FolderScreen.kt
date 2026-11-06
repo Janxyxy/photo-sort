@@ -137,7 +137,7 @@ fun FolderScreen(
         bottomBar = bottomBar,
         topBar = {
             TopAppBar(
-                title = { Text("FotoSort") },
+                title = { Text("PhotoSort") },
                 actions = {
                     LayoutToggleButton(listLayout) {
                         listLayout = !listLayout
@@ -189,7 +189,7 @@ private fun PermissionPrompt(onGrant: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            "FotoSort needs access to your photos and videos to show your folders.",
+            "PhotoSort needs access to your photos and videos to show your folders.",
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyLarge,
         )

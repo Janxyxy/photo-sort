@@ -1,5 +1,5 @@
 <resources>
-    <style name="Theme.FotoSort" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.PhotoSort" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@android:color/black</item>
     </style>
 </resources>

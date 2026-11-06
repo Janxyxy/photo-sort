@@ -23,7 +23,7 @@ fun ThemeMode.isDark(): Boolean = when (this) {
 }
 
 @Composable
-fun FotoSortTheme(dark: Boolean = true, content: @Composable () -> Unit) {
+fun PhotoSortTheme(dark: Boolean = true, content: @Composable () -> Unit) {
     val context = LocalContext.current
     val dynamic = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val colors = when {
